@@ -4,8 +4,11 @@
 #include <unicode/unistr.h>         // ICU Unicode en BLE (https://unicode-org.github.io/icu-docs/apidoc/released/icu4c/classicu_1_1UnicodeString.html)
 #include <memory>                   // shared_ptr
 #include <vector>
+#include <functional>
 
 namespace Amatista {
+
+	class Lista;
 
 	class Objeto {
 	public:
@@ -24,6 +27,8 @@ namespace Amatista {
 				salida << "objeto:(" << this->nombre() << ")";
 				return salida;
 			}
+
+		virtual Lista& ejecutar (Lista&) {throw std::runtime_error ("No es ejecutable");}
 
 		friend std::ostream& operator<< (std::ostream &salida, const Objeto &a)
 			{
@@ -61,14 +66,6 @@ namespace Amatista {
 			}
 	private:
 		std::string _c;
-	};
-
-	class Funcion : public Objeto {
-	public:
-		Funcion (std::string &n)
-			{this->_nombre = n;}
-
-		//const Lista&
 	};
 
 
@@ -184,6 +181,19 @@ namespace Amatista {
 			}
 	};
 
+	class Funcion : public Objeto {
+	public:
+		Funcion (const std::string &n, std::function<Lista&(Lista&)> f)
+			{this->_nombre = n; this->_f=f;}
+
+		Lista& ejecutar (Lista& params)
+			{return _f (params);}
+	private:
+		std::function<Lista&(Lista&)> _f;
+	};
+
+	Funcion mostrador ("mostrar", [] (Lista& l) -> Lista& {l.mostrar(); return l;});
+
 }
 
 int main (void)
@@ -191,4 +201,6 @@ int main (void)
 	Amatista::Lista loop;
 	std::ifstream archivo("test.amt", std::ios::binary);
 	archivo >> loop;
+	std::cout << "MOSTRANDO" << std::endl;
+	Amatista::mostrador.ejecutar (loop);
 }
